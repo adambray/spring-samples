@@ -27,6 +27,12 @@ The project consists of a `core` module containing high-level use cases, an
 mechanism, and a `sql-backed-persistence` module containing a database plugin.
 The gradle buildscripts define the dependencies between the modules.
 
+In particular, the `sql-backed-persistence` module has a test dependency on the
+`core` module's test source set, because it needs access to an abstract
+repository test to extend for the implementation it provides. See the
+`build.gradle` file in the `sql-backed-persistence` module to see how that
+dependency is defined.
+
 ### @Bean and @Import for building a Spring context without wide package scanning
 
 The `core` module has no Spring dependency, so the use case classes are not
