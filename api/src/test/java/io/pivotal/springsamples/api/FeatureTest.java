@@ -15,10 +15,10 @@ public abstract class FeatureTest {
 
     protected abstract String rootUrl();
     protected abstract Integer upcomingWindow();
+    private LocalDate today = LocalDate.now();
 
     @Test
     public void mainWorkflow() throws Exception {
-        LocalDate today = LocalDate.now();
 
         String newEventUrl = given()
                 .contentType(ContentType.APPLICATION_JSON.toString())
@@ -87,6 +87,22 @@ public abstract class FeatureTest {
                 .get(rootUrl() + "/api/events/nonexistent-id")
                 .then()
                 .statusCode(404);
+
+        given()
+                .contentType(ContentType.APPLICATION_JSON.toString())
+                .body("{\n" +
+                        "  \"title\": \"\",\n" +
+                        "  \"date\": \"" + formatted(today.minusDays(1)) + "\"\n" +
+                        "}")
+                .when()
+                .post(rootUrl() + "/api/events")
+                .then()
+                .statusCode(422)
+                .body("errors[0].code", equalTo("missing_title"))
+                .body("errors[0].description", equalTo("Title is a required field and must not be blank"))
+                .body("errors[1].code", equalTo("date_is_past"))
+                .body("errors[1].description", equalTo("The date must be today or later"))
+        ;
     }
 
     private static String formatted(LocalDate date) {
