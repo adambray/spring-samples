@@ -13,6 +13,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -26,32 +28,44 @@ public class CreateEventController {
 
     @RequestMapping(value = "/api/events", method = RequestMethod.POST)
     public ResponseEntity createEvent(@RequestBody CreateEventRequest request, UriComponentsBuilder uriBuilder) {
-        return createEvent.perform(
-                request.getTitle(),
-                LocalDate.parse(request.getDate()),
-                LocalDateTime.now(),
+        try {
 
-                new CreateEvent.ResultHandler<ResponseEntity>() {
-                    @Override
-                    public ResponseEntity eventCreated(Event event) {
-                        return ResponseEntity
-                                .created(uriBuilder.path("/api/events/" + event.getId()).build().toUri())
-                                .body(new EventJson(event));
-                    }
+            String title = request.getTitle();
+            LocalDateTime currentTime = LocalDateTime.now();
+            LocalDate date = LocalDate.parse(request.getDate());
 
-                    @Override
-                    public ResponseEntity eventNotCreatedDueToValidationErrors(List<CreateEvent.ValidationError> errors) {
-                        return ResponseEntity
-                                .unprocessableEntity()
-                                .body(
-                                        new ValidationErrorResponse(errors.stream()
-                                                .map(error -> messageForError(error))
-                                                .collect(Collectors.toList())
-                                        )
-                                );
+            return createEvent.perform(
+                    title,
+                    date,
+                    currentTime,
+
+                    new CreateEvent.ResultHandler<ResponseEntity>() {
+                        @Override
+                        public ResponseEntity eventCreated(Event event) {
+                            return ResponseEntity
+                                    .created(uriBuilder.path("/api/events/" + event.getId()).build().toUri())
+                                    .body(new EventJson(event));
+                        }
+
+                        @Override
+                        public ResponseEntity eventNotCreatedDueToValidationErrors(List<CreateEvent.ValidationError> errors) {
+                            return ResponseEntity
+                                    .unprocessableEntity()
+                                    .body(
+                                            new ValidationErrorResponse(errors.stream()
+                                                    .map(error -> messageForError(error))
+                                                    .collect(Collectors.toList())
+                                            )
+                                    );
+                        }
                     }
-                }
-        );
+            );
+
+        } catch (DateTimeParseException e) {
+            return ResponseEntity.badRequest().body(new ValidationErrorResponse(Collections.singletonList(
+                    new ValidationErrorResponse.ErrorMessage("invalid_date", "The date must be in yyyy-mm-dd format")
+            )));
+        }
     }
 
     @Getter
@@ -83,7 +97,7 @@ public class CreateEventController {
     }
 
     private ValidationErrorResponse.ErrorMessage messageForError(CreateEvent.ValidationError error) {
-        switch(error) {
+        switch (error) {
             case TITLE_IS_REQUIRED:
                 return new ValidationErrorResponse.ErrorMessage("missing_title", "Title is a required field and must not be blank");
             case DATE_MUST_NOT_BE_PAST:

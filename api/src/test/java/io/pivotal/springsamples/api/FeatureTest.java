@@ -103,6 +103,20 @@ public abstract class FeatureTest {
                 .body("errors[1].code", equalTo("date_is_past"))
                 .body("errors[1].description", equalTo("The date must be today or later"))
         ;
+
+        given()
+                .contentType(ContentType.APPLICATION_JSON.toString())
+                .body("{\n" +
+                        "  \"title\": \"\",\n" +
+                        "  \"date\": \"\"\n" +
+                        "}")
+                .when()
+                .post(rootUrl() + "/api/events")
+                .then()
+                .statusCode(400)
+                .body("errors[0].code", equalTo("invalid_date"))
+                .body("errors[0].description", equalTo("The date must be in yyyy-mm-dd format"))
+        ;
     }
 
     private static String formatted(LocalDate date) {

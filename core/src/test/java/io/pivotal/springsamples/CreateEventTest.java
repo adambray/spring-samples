@@ -48,7 +48,6 @@ public class CreateEventTest {
         List<CreateEvent.ValidationError> errors = createEvent.perform("Old Event", yesterday, now, grabExpectedErrors);
 
         assertThat(errors, containsInAnyOrder(CreateEvent.ValidationError.DATE_MUST_NOT_BE_PAST));
-
     }
 
     @Test
